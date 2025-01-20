@@ -1,11 +1,13 @@
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 from mkdocs_autorefs.references import AutorefsHookInterface
 from .doxygen import DoxygenObject
 from subprocess import PIPE, STDOUT, CalledProcessError, Popen
 from pathlib import Path
 
 
-def _clang_format(code: str, root_directory: Path, line_length: int) -> str:
+def _clang_format(
+    code: str, root_directory: Path, line_length: int, based_on_style
+) -> str:
     """Format code using clang-format.
 
     Parameters:
@@ -20,7 +22,7 @@ def _clang_format(code: str, root_directory: Path, line_length: int) -> str:
         "-assume-filename",
         "input.cpp",
         "--style",
-        f"{{BasedOnStyle: InheritParentConfig, ColumnLimit: {line_length}}}",
+        f"{{BasedOnStyle: {based_on_style}, ColumnLimit: {line_length}}}",
     ]
     process = Popen(
         cmd,
@@ -36,7 +38,12 @@ def _clang_format(code: str, root_directory: Path, line_length: int) -> str:
 
 
 def do_format(code: str, config: Mapping[str, Any]) -> str:
-    return _clang_format(code, config["source_directory"], config["line_length"])
+    return _clang_format(
+        code,
+        config["source_directory"],
+        config["line_length"],
+        config["clang_format_based_on_style"],
+    )
 
 
 class AutorefsHook(AutorefsHookInterface):
