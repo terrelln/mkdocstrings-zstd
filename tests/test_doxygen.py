@@ -225,3 +225,17 @@ def test_func_in_para_returns(doxygen):
 
     assert desc[6].kind == DescriptionKind.TEXT
     assert desc[6].contents == "Followed by some more text </p>"
+
+def test_var_list_items(doxygen):
+    var = doxygen.collect("var_list_items")
+    desc = var.description
+    assert len(desc) == 1
+    assert desc[0].kind == DescriptionKind.TEXT
+    assert desc[0].contents == (
+        '<p markdown="1">text<ul markdown="1">\n'
+        '<li markdown="1"><p markdown="1">item1</p></li>'
+        '<li markdown="1"><p markdown="1">item2</p></li></ul></p>\n'
+        '<p markdown="1">more</p>\n'
+        '<p markdown="1"><ul markdown="1">\n'
+        '<li markdown="1"><p markdown="1">item1 </p></li></ul></p>'
+    )

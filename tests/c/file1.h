@@ -103,4 +103,15 @@ struct g1_struct g1_func(g1_enum e);
  */
 int func_in_para_returns(int x);
 
+/**
+ * text
+ * - item1
+ * - item2
+ *
+ * more
+ *
+ * - item1
+ */
+int var_list_items;
+
 #endif

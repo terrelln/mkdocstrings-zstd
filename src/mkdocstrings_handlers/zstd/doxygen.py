@@ -394,6 +394,8 @@ TAG_TO_PARSER = {
     "emphasis": SimpleNodeParser("emphasis", "<em>", "</em>"),
     "computeroutput": SimpleNodeParser("computeroutput", "<code>", "</code>"),
     "para": SimpleNodeParser("para", '<p markdown="1">', "</p>"),
+    "itemizedlist": SimpleNodeParser("itemizedlist", '<ul markdown="1">', "</ul>"),
+    "listitem": SimpleNodeParser("listitem", '<li markdown="1">', "</li>"),
     "programlisting": ProgramListingNodeParser(),
     "verbatim": CodeBlockNodeParser("verbatim"),
     "codeline": SimpleNodeParser("codeline", "", ""),
