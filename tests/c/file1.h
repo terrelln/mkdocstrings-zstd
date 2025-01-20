@@ -85,4 +85,22 @@ union g1_union {
  */
 struct g1_struct g1_func(g1_enum e);
 
+/**
+ * This is some inline documentation that goes straight
+ * into a return without a newline.
+ * @returns Something
+ *          with a multiline
+ * @note This is an important note
+ * @warning Followed by a very important warning
+ *
+ * Finally some text
+ * @param x This is a param
+ * @param[out] y This is another param
+ *
+ * @param z Finally a 3rd param
+ *
+ * Followed by some more text
+ */
+int func_in_para_returns(int x);
+
 #endif

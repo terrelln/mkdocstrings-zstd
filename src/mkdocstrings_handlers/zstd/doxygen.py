@@ -414,7 +414,113 @@ def parse_text(
             out += TAG_TO_PARSER[node.tag].handle(node, allowlist)
         else:
             raise ValueError(f"Unexpected tag '{node.tag}' in Doxygen XML")
-    return out
+    return out.strip()
+
+
+class DescriptionParser:
+    """
+    Perform an in order traversal of the XML tree and parse into
+    DescriptionSection objects.
+    """
+
+    def __init__(self, parameters: Optional[List[Parameter]] = None) -> None:
+        self._sections = []
+        self._current_text = ""
+        self._parameters = parameters
+
+    def _flush_text(self):
+        self._current_text = self._current_text.strip()
+        if len(self._current_text) > 0:
+            self._sections.append(DescriptionText(contents=self._current_text))
+            self._current_text = ""
+
+    def _append_section(self, section: DescriptionSection) -> None:
+        self._flush_text()
+        if (
+            section.kind == DescriptionKind.LIST
+            and len(self._sections) > 0
+            and self._sections[-1].kind == DescriptionKind.LIST
+            and self._sections[-1].title == section.title
+        ):
+            self._sections[-1].contents += section.contents
+        else:
+            self._sections.append(section)
+
+    def _parse_simplesect(self, node: ElementTree.Element) -> None:
+        if node.text:
+            raise ValueError("Unexpected text in <simplesect>")
+
+        kind = some(node.get("kind"))
+        if kind == "return":
+            self._append_section(DescriptionReturn(description=parse_text(list(node))))
+        elif is_admonition(kind):
+            self._append_section(
+                DescriptionAdmonition(
+                    style=admonition_style(kind),
+                    title=admonition_title(kind),
+                    contents=parse_text(list(node)),
+                )
+            )
+        elif kind == "pre" or kind == "post":
+            contents = parse_text(list(node))
+            title = {"pre": "Preconditions", "post": "Postconditions"}[kind]
+            self._append_section(DescriptionList(title=title, contents=[contents]))
+        else:
+            raise ValueError(f"Unexpected kind '{kind}' in Doxygen XML")
+
+        if node.tail:
+            self._current_text += node.tail
+
+    def _parse_parameterlist(self, node: ElementTree.Element) -> None:
+        if node.text:
+            raise ValueError("Unexpected text in <parameterlist>")
+
+        self._append_section(
+            parse_description_parameters(
+                node.findall("parameteritem"), self._parameters
+            )
+        )
+
+        if node.tail:
+            self._current_text += node.tail
+
+    def _parse_para(self, node: ElementTree.Element) -> None:
+        handler = TAG_TO_PARSER["para"]
+
+        self._current_text += handler.prefix(node)
+
+        if node.text:
+            self._current_text += node.text
+
+        for child in list(node):
+            self.parse(child)
+
+        self._current_text += handler.suffix(node)
+
+        if node.tail:
+            self._current_text += node.tail
+
+    def parse(self, node: ElementTree.Element) -> None:
+        if node.tag == "para":
+            return self._parse_para(node)
+
+        if node.tag == "simplesect":
+            return self._parse_simplesect(node)
+
+        if node.tag == "parameterlist" and some(node.get("kind")) == "param":
+            return self._parse_parameterlist(node)
+
+        self._current_text += parse_text([node])
+
+    def sections(self) -> List[DescriptionSection]:
+        self._flush_text()
+
+        sections = self._sections
+
+        self._sections = []
+        self._current_text = ""
+
+        return sections
 
 
 def parse_direction(node: ElementTree.Element) -> Optional[ParameterDirection]:
@@ -433,11 +539,13 @@ def parse_direction(node: ElementTree.Element) -> Optional[ParameterDirection]:
 
 def parse_description_parameters(
     nodes: List[ElementTree.Element],
-    parameters: List[Parameter],
+    parameters: Optional[List[Parameter]] = None,
 ) -> DescriptionParameters:
     params = []
 
     def get_type(name: Name) -> Optional[Type]:
+        if parameters is None:
+            return None
         for p in parameters:
             if p.name == name:
                 return p.type
@@ -480,6 +588,12 @@ def parse_description(
     nodes = node.findall("briefdescription") + node.findall("detaileddescription")
 
     description = []
+
+    parser = DescriptionParser(parameters)
+    for node in nodes:
+        [parser.parse(n) for n in list(node)]
+
+    return parser.sections()
 
     def append_list(title: str, content: str):
         if (
@@ -655,7 +769,7 @@ class Doxygen:
                 source_directory,
                 " ".join(sources),
                 self._doxyxml_dir,
-                " ".join([f'"{p}"' for p in predefined])
+                " ".join([f'"{p}"' for p in predefined]),
             ).encode("utf-8")
         )
         if p.returncode != 0:

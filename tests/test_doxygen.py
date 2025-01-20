@@ -1,6 +1,8 @@
 from mkdocstrings_handlers.zstd.doxygen import (
     CompoundType,
-    ObjectKind
+    DescriptionKind,
+    ObjectKind,
+    ParameterDirection,
 )
 
 
@@ -105,14 +107,15 @@ def test_struct(doxygen):
     assert s.members[0].type == "int"
     assert s.members[0].name == "x"
     assert s.members[0].qualified_name == "s1::x"
-    
+
     assert s.members[1].kind == ObjectKind.VARIABLE
     assert s.members[1].type == "enum1"
     assert s.members[1].name == "e"
     assert s.members[1].qualified_name == "s1::e"
-    
+
     assert s.members[2].kind == ObjectKind.VARIABLE
     assert s.members[2].qualified_name == "s1::y"
+
 
 def test_union(doxygen):
     u = doxygen.collect("u1")
@@ -131,6 +134,7 @@ def test_union(doxygen):
     assert u.members[1].name == "s"
     assert u.members[1].qualified_name == "u1::s"
 
+
 def test_group(doxygen):
     g = doxygen.collect("g1")
     assert g.kind == ObjectKind.COMPOUND
@@ -142,7 +146,7 @@ def test_group(doxygen):
     assert g.members[0].type == CompoundType.STRUCT
     assert g.members[0].name == "g1_struct"
     assert g.members[0].qualified_name == "g1_struct"
-    
+
     assert g.members[1].kind == ObjectKind.COMPOUND
     assert g.members[1].type == CompoundType.UNION
     assert g.members[1].name == "g1_union"
@@ -166,3 +170,58 @@ def test_group(doxygen):
     assert g.members[5].name == "G1_MACRO"
     assert g.members[5].value == "5"
     assert g.members[5].qualified_name == "G1_MACRO"
+
+
+def test_func_in_para_returns(doxygen):
+    func = doxygen.collect("func_in_para_returns")
+    desc = func.description
+    print(desc)
+    assert len(desc) == 7
+
+    assert desc[0].kind == DescriptionKind.TEXT
+    assert (
+        desc[0].contents
+        == '<p markdown="1">This is some inline documentation that goes straight into a return without a newline.'
+    )
+
+    assert desc[1].kind == DescriptionKind.RETURN
+    assert desc[1].description == '<p markdown="1">Something with a multiline </p>'
+
+    assert desc[2].kind == DescriptionKind.ADMONITION
+    assert desc[2].style == "note"
+    assert desc[2].title == "Note"
+    assert desc[2].contents == '<p markdown="1">This is an important note </p>'
+
+    assert desc[3].kind == DescriptionKind.ADMONITION
+    assert desc[3].style == "warning"
+    assert desc[3].title == "Warning"
+    assert (
+        desc[3].contents == '<p markdown="1">Followed by a very important warning</p>'
+    )
+
+    assert desc[4].kind == DescriptionKind.TEXT
+    assert desc[4].contents == "Finally some text"
+
+    assert desc[5].kind == DescriptionKind.PARAMETERS
+    assert len(desc[5].parameters) == 3
+    assert desc[5].parameters[0].name == "x"
+    assert desc[5].parameters[0].type == "int"
+    assert desc[5].parameters[0].direction is None
+    assert desc[5].parameters[0].description == '<p markdown="1">This is a param </p>'
+
+    assert desc[5].parameters[1].name == "y"
+    assert desc[5].parameters[1].type is None
+    assert desc[5].parameters[1].direction == ParameterDirection.OUT
+    assert (
+        desc[5].parameters[1].description == '<p markdown="1">This is another param</p>'
+    )
+
+    assert desc[5].parameters[2].name == "z"
+    assert desc[5].parameters[2].type is None
+    assert desc[5].parameters[2].direction is None
+    assert (
+        desc[5].parameters[2].description == '<p markdown="1">Finally a 3rd param</p>'
+    )
+
+    assert desc[6].kind == DescriptionKind.TEXT
+    assert desc[6].contents == "Followed by some more text </p>"
