@@ -1,0 +1,19 @@
+{#- Template for parameters in docstrings.
+
+This template renders a list of text.
+
+Context:
+section: The section to render.
+heading_level
+html_id
+autorefs_hook
+-#}
+
+<p><span class="doc-section-title">{{ section.title }}:</span></p>
+<ul>
+    {% for item in section.contents %}
+    <li class="doc-section-item field-body">
+        {{ item|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+    </li>
+    {% endfor %}
+</ul>

@@ -1,0 +1,36 @@
+{#- Template for descriptions.
+
+Context:
+description_sections (list[descriptionSection]): The list of description sections.
+config (dict): The configuration dictionary.
+heading_level (int): The heading level to use for Markdown conversion.
+html_id (str): The HTML ID to use for Markdown conversion.
+-#}
+
+{% with autoref_hook = AutorefsHook(obj, config) %}
+
+{% if description_sections %}
+
+{% for section in description_sections %}
+{% if config.show_description and section.kind == "text" %}
+{{ log.info(section.contents) }}
+{{ section.contents|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+{% elif config.show_description and section.kind == "admonition" %}
+{% include "description/admonition.html.jinja" %}
+{% elif config.show_description_preconditions and section.kind == "list" and section.title == "Preconditions" %}
+{% include "description/list.html.jinja" %}
+{% elif config.show_description_postconditions and section.kind == "list" and section.title == "Postconditions" %}
+{% include "description/list.html.jinja" %}
+{% elif config.show_description_parameters and section.kind == "parameters" %}
+{% include "description/parameters.html.jinja" %}
+{% elif config.show_description_return and section.kind == "return" %}
+{% include "description/return.html.jinja" %}
+{% elif config.show_description_attributes and section.kind == "attributes" %}
+{% include "description/attributes.html.jinja" %}
+{% endif %}
+
+{% endfor %}
+
+{% endif %}
+
+{% endwith%}

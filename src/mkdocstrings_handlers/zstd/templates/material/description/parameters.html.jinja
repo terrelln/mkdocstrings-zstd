@@ -1,0 +1,26 @@
+{#- Template for parameters in docstrings.
+
+This template renders parameters in a list format.
+
+Context:
+section: The section to render.
+heading_level
+html_id
+autorefs_hook
+-#}
+
+<p><span class="doc-section-title">{{ section.title or "Parameters" }}:</span></p>
+<ul>
+    {% for parameter in section.parameters %}
+    <li class="doc-section-item field-body">
+        <code><b>{{ parameter.name }}</b>
+        {%- if config.show_description_parameter_type and parameter.type %}: {{ parameter.type }}{% endif -%}
+        {%- if parameter.direction %} [{{ parameter.direction }}]{% endif -%}
+        </code>
+        –
+        <div class="doc-md-description">
+            {{ parameter.description|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
