@@ -627,7 +627,7 @@ def parse_compound_type(node: ElementTree.Element) -> CompoundType:
 class Doxygen:
     def __init__(
         self,
-        source_dir: Path,
+        source_directory: Path,
         sources: List[Path],
         xml_output: Path,
         predefined: List[str],
@@ -636,7 +636,7 @@ class Doxygen:
         os.makedirs(self._doxyxml_dir, exist_ok=True)
         # Run doxygen.
         cmd = ["doxygen", "-"]
-        p = Popen(cmd, cwd=source_dir, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        p = Popen(cmd, cwd=source_directory, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
         out, _ = p.communicate(
             input=r"""
             PROJECT_NAME         = zstd
@@ -652,7 +652,7 @@ class Doxygen:
             SKIP_FUNCTION_MACROS = NO
             PREDEFINED           = {3}
             """.format(
-                source_dir,
+                source_directory,
                 " ".join(sources),
                 self._doxyxml_dir,
                 " ".join([f'"{p}"' for p in predefined])

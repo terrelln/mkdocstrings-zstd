@@ -1,6 +1,6 @@
 from typing import Any, Mapping
 from mkdocs_autorefs.references import AutorefsHookInterface
-from .doxygen import DoxygenObject, ObjectKind
+from .doxygen import DoxygenObject
 from subprocess import PIPE, STDOUT, CalledProcessError, Popen
 from pathlib import Path
 

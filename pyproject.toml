@@ -1,0 +1,27 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+name = "mkdocstrings-zstd"
+version = "0.0.1"
+
+dependencies = [
+    "mkdocstrings>=0.26",
+    "mkdocs-autorefs>=1.2",
+]
+
+[tool.pdm.build]
+package-dir = "src"
+includes = ["src/mkdocstrings_handlers"]
+editable-backend = "editables"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+]
