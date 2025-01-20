@@ -53,7 +53,7 @@ class ZstdHandler(BaseHandler):
             source_directory=source_directory,
             sources=sources,
             xml_output=os.path.join(build_directory, "doxyxml"),
-            predefined=predefined,
+            predefined=predefined or [],
         )
 
     def collect(self, identifier: str, _config: Mapping[str, Any]) -> DoxygenObject:
