@@ -130,7 +130,7 @@ def get_handler(
 
     config_file_dir = os.path.dirname(config_file_path)
     source_directory = os.path.join(config_file_dir, source_directory)
-    build_directory = os.path.join(config_file_dir, source_directory)
+    build_directory = os.path.join(config_file_dir, build_directory)
 
     return ZstdHandler(
         handler="zstd",
