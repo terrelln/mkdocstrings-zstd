@@ -9,7 +9,9 @@ html_id
 autorefs_hook
 -#}
 
+{% if description.title %}
 <p><span class="doc-section-title">{{ description.title }}:</span></p>
+{% endif %}
 <ul>
     {% for item in description.contents %}
     <li class="doc-section-item field-body">

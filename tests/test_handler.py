@@ -54,3 +54,10 @@ def test_handler_func_macro_no_args(handler: ZstdHandler):
     item = handler.collect("FUNC_MACRO_NO_ARGS", {})
     html = handler.render(item, {})
     assert ">#define FUNC_MACRO_NO_ARGS() y<" in html
+
+def test_handler_var_item_lists(handler: ZstdHandler):
+    item = handler.collect("var_list_items", {})
+    html = handler.render(item, {})
+    assert "</ul>" in html
+    assert "</li>" in html
+    assert 'class="doc-section-title"' not in html
