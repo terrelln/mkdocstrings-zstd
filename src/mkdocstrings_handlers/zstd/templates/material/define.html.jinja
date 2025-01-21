@@ -28,9 +28,12 @@ config (dict): The configuration options
     {% block signature scoped %}
     {%+ filter highlight(language="cpp", inline=True) %}
     &#35;define {{ define.name }}
+    {%- if define.parameters is not none -%}
     {%- with parameters = define.parameters -%}
     {% include "signature.html.jinja" %}
-    {%- endwith %}
+    {%- endwith -%}
+    {%- endif -%}
+    {%- if config.show_define_initializer and define.initializer %} {{ define.initializer }}{% endif %}
     {% endfilter %}
     {% endblock signature %}
 

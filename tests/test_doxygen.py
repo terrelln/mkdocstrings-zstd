@@ -16,7 +16,7 @@ def test_doxygen_file1(doxygen):
     macro1 = doxygen.collect("MACRO1")
     assert macro1.kind == ObjectKind.DEFINE
     assert macro1.name == "MACRO1"
-    assert macro1.value == "x"
+    assert macro1.initializer == "x"
     assert len(macro1.parameters) == 1
     assert macro1.parameters[0].type is None
     assert macro1.parameters[0].name == "x"
@@ -46,7 +46,7 @@ def test_doxygen_file2(doxygen):
     macro2 = doxygen.collect("MACRO2")
     assert macro2.kind == ObjectKind.DEFINE
     assert macro2.name == "MACRO2"
-    assert macro2.value == "MACRO3(x)"
+    assert macro2.initializer == "MACRO3(x)"
     assert len(macro2.parameters) == 1
     assert macro2.parameters[0].type is None
     assert macro2.parameters[0].name == "x"
@@ -76,7 +76,7 @@ def test_doxygen_file3(doxygen):
     macro3 = doxygen.collect("MACRO3")
     assert macro3.kind == ObjectKind.DEFINE
     assert macro3.name == "MACRO3"
-    assert macro3.value == "MACRO1(x)"
+    assert macro3.initializer == "MACRO1(x)"
     assert len(macro3.parameters) == 1
     assert macro3.parameters[0].type is None
     assert macro3.parameters[0].name == "x"
@@ -174,7 +174,7 @@ def test_group(doxygen):
 
     assert g.members[5].kind == ObjectKind.DEFINE
     assert g.members[5].name == "G1_MACRO"
-    assert g.members[5].value == "5"
+    assert g.members[5].initializer == "5"
     assert g.members[5].qualified_name == "G1_MACRO"
 
 

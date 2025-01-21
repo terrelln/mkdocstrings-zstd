@@ -155,7 +155,7 @@ class Define:
     kind: ClassVar[ObjectKind] = ObjectKind.DEFINE
     name: Name
     parameters: Optional[List[Parameter]]
-    value: Optional[str]
+    initializer: Optional[str]
     description: Description
     location: Location
 
@@ -272,22 +272,33 @@ def parse_type(node: Optional[ElementTree.Element]) -> Optional[Type]:
     return normalize_type(result)
 
 
-def parse_parameters(kind: ObjectKind, node: ElementTree.Element) -> List[Parameter]:
+def parse_parameters(
+    kind: ObjectKind, node: ElementTree.Element
+) -> Optional[List[Parameter]]:
     name_tag = {
         ObjectKind.FUNCTION: "declname",
         ObjectKind.DEFINE: "defname",
     }[kind]
 
+    nodes = node.findall("param")
+    if kind == ObjectKind.DEFINE and len(nodes) == 0:
+        # Differentiate between a define with no parameters and a define with
+        # 0 parameters
+        return None
+
     params = []
-    for p in node.findall("param"):
+    for p in nodes:
         param = Parameter(
             type=parse_type(p.find("type")),
             name=parse_name(p.find(name_tag)),
         )
-        if kind == ObjectKind.FUNCTION:
-            assert param.type is not None
-        if kind == ObjectKind.DEFINE:
-            assert param.name is not None
+        if kind == ObjectKind.DEFINE and param.name is None:
+            if len(nodes) == 1:
+                # This means a macro with 0 parameters
+                break
+            raise ValueError("Define parameter must have name")
+        if kind == ObjectKind.FUNCTION and param.type is None:
+            raise ValueError("Function parameter must have type")
         params.append(param)
     return params
 
@@ -614,13 +625,13 @@ def parse_function(node: ElementTree.Element) -> Function:
 
 
 def parse_define(node: ElementTree.Element) -> Define:
-    value = node.find("initializer")
-    if value is not None:
-        value = value.text
+    initializer = node.find("initializer")
+    if initializer is not None:
+        initializer = initializer.text
     return Define(
         name=some(parse_name(node.find("name"))),
         parameters=parse_parameters(ObjectKind.DEFINE, node),
-        value=value,
+        initializer=initializer,
         description=parse_description(node, []),
         location=some(parse_location(node)),
     )

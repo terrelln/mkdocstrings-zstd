@@ -130,4 +130,9 @@ int var_brief_and_detailed;
  */
 int var_markups;
 
+#define EMPTY_MACRO
+#define SIMPLE_MACRO 1
+#define FUNC_MACRO(x) x
+#define FUNC_MACRO_NO_ARGS() y
+
 #endif

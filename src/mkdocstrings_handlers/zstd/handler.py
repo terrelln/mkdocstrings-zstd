@@ -26,6 +26,7 @@ class ZstdHandler(BaseHandler):
         "show_function_toc_entries": True,
         "show_define_toc_entries": True,
         "show_variable_toc_entries": False,
+        "show_define_initializer": True,
         "clang_format_based_on_style": "InheritParentConfig",
         "heading_level": 2,
         "line_length": 80,
