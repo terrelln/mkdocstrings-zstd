@@ -9,6 +9,8 @@ html_id
 autorefs_hook
 -#}
 
+{% if config.show_description_return %}
+
 <p>
     <span class="doc-section-title">{{ description.title }}:</span>
 </p>
@@ -17,3 +19,5 @@ autorefs_hook
     {% include "description.html.jinja" %}
     {% endwith %}
 </div>
+
+{% endif %}

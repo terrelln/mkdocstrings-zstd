@@ -61,3 +61,45 @@ def test_handler_var_item_lists(handler: ZstdHandler):
     assert "</ul>" in html
     assert "</li>" in html
     assert 'class="doc-section-title"' not in html
+
+def test_handler_show_description(handler: ZstdHandler):
+    item = handler.collect("var_brief", {})
+
+    html = handler.render(item, {})
+    assert "brief description" in html
+    
+    html = handler.render(item, {"show_description": False})
+    assert "brief description" not in html
+
+def test_handler_show_description_preconditions(handler: ZstdHandler):
+    item = handler.collect("func1", {})
+
+    html = handler.render(item, {})
+    assert "Preconditions" in html
+    assert "s != NULL" in html
+    
+    html = handler.render(item, {"show_description_preconditions": False})
+    assert "Preconditions" not in html
+    assert "s != NULL" not in html
+
+def test_handler_show_description_postconditions(handler: ZstdHandler):
+    item = handler.collect("func1", {})
+
+    html = handler.render(item, {})
+    assert "Postconditions" in html
+    assert "s-&gt;x == x" in html
+    
+    html = handler.render(item, {"show_description_postconditions": False})
+    assert "Postconditions" not in html
+    assert "s-&gt;x == x" not in html
+
+def test_handler_show_description_return(handler: ZstdHandler):
+    item = handler.collect("func1", {})
+
+    html = handler.render(item, {})
+    assert "Returns" in html
+    assert ">s-&gt;x<" in html
+    
+    html = handler.render(item, {"show_description_return": False})
+    assert "Returns" not in html
+    assert ">s-&gt;x<" not in html

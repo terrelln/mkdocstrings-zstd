@@ -8,6 +8,8 @@ heading_level (int): The heading level to use for Markdown conversion.
 html_id (str): The HTML ID to use for Markdown conversion.
 -#}
 
+{% if config.show_description %}
+
 {% with autoref_hook = AutorefsHook(obj, config) %}
 
 {% if description %}
@@ -15,3 +17,5 @@ html_id (str): The HTML ID to use for Markdown conversion.
 {% endif %}
 
 {% endwith%}
+
+{% endif %}

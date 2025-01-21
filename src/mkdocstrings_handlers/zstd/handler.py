@@ -16,7 +16,6 @@ class ZstdHandler(BaseHandler):
         "show_description_postconditions": True,
         "show_description_parameters": True,
         "show_description_return": True,
-        "show_description_attributes": True,
         "show_description_parameter_type": False,
         "show_symbol_type_toc": True,
         "show_signature": True,

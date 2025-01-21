@@ -9,6 +9,13 @@ html_id
 autorefs_hook
 -#}
 
+{% if
+not description.title
+or description.title == "Preconditions" and config.show_description_preconditions
+or description.title == "Postconditions" and config.show_description_postconditions
+or description.title == "Parameters" and config.show_description_parameters
+%}
+
 {% if description.title %}
 <p><span class="doc-section-title">{{ description.title }}:</span></p>
 {% endif %}
@@ -21,3 +28,5 @@ autorefs_hook
     </li>
     {% endfor %}
 </ul>
+
+{% endif %}
