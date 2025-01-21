@@ -89,7 +89,7 @@ class AutorefsHook(AutorefsHookInterface):
 
         if self.current_object.location is not None:
             filepath = self.current_object.location.file
-            lineno = self.current_object.locaion.line
+            lineno = self.current_object.location.line
         else:
             filepath = ""
             lineno = 0
