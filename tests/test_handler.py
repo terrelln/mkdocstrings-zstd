@@ -103,3 +103,12 @@ def test_handler_show_description_return(handler: ZstdHandler):
     html = handler.render(item, {"show_description_return": False})
     assert "Returns" not in html
     assert ">s-&gt;x<" not in html
+
+def test_handler_func_with_param(handler: ZstdHandler):
+    item = handler.collect("func_with_param", {})
+    html = handler.render(item, {})
+    print(html)
+    pos = html.find('<div class="doc-md-description">')
+    assert pos != -1
+    html = html[pos:]
+    assert html.count("<p>") == 1

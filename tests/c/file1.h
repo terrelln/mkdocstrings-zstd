@@ -135,4 +135,9 @@ int var_markups;
 #define FUNC_MACRO(x) x
 #define FUNC_MACRO_NO_ARGS() y
 
+/**
+ * @param x has a description
+ */
+void func_with_param(int x);
+
 #endif

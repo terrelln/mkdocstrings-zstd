@@ -330,3 +330,28 @@ def test_var_markups(doxygen):
         ]
     )
     assert desc == expected
+
+
+def test_func_with_param(doxygen):
+    func = doxygen.collect("func_with_param")
+    desc = func.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionList(
+                title="Parameters",
+                contents=[
+                    DescriptionParameter(
+                        name="x",
+                        description=DescriptionParagraph(
+                            contents=[DescriptionText(contents="has a description")]
+                        ),
+                        type="int",
+                        direction=None,
+                    )
+                ],
+            )
+        ]
+    )
+    assert desc == expected

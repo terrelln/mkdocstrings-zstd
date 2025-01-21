@@ -3,4 +3,4 @@
   description (DescriptionText)
 -#}
 
-{{ description.contents|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+{{ description.contents|convert_markdown(heading_level, html_id, strip_paragraph=True, autoref_hook=autoref_hook) }}

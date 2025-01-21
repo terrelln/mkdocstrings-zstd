@@ -21,3 +21,5 @@
 ::: FUNC_MACRO
 
 ::: FUNC_MACRO_NO_ARGS
+
+::: func_with_param
