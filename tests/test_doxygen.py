@@ -3,6 +3,12 @@ from mkdocstrings_handlers.zstd.doxygen import (
     DescriptionKind,
     ObjectKind,
     ParameterDirection,
+    DescriptionAdmonition,
+    DescriptionParagraph,
+    DescriptionText,
+    DescriptionReturn,
+    DescriptionParameter,
+    DescriptionList,
 )
 
 
@@ -175,67 +181,169 @@ def test_group(doxygen):
 def test_func_in_para_returns(doxygen):
     func = doxygen.collect("func_in_para_returns")
     desc = func.description
+
     print(desc)
-    assert len(desc) == 7
-
-    assert desc[0].kind == DescriptionKind.TEXT
-    assert (
-        desc[0].contents
-        == '<p markdown="1">This is some inline documentation that goes straight into a return without a newline.'
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionParagraph(
+                contents=[
+                    DescriptionText(
+                        contents="This is some inline documentation that goes straight into a return without a newline."
+                    ),
+                    DescriptionReturn(
+                        description=DescriptionParagraph(
+                            contents=[
+                                DescriptionParagraph(
+                                    contents=[
+                                        DescriptionText(
+                                            contents="Something with a multiline"
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        title="Returns",
+                    ),
+                    DescriptionAdmonition(
+                        style="note",
+                        title="Note",
+                        contents=DescriptionParagraph(
+                            contents=[
+                                DescriptionParagraph(
+                                    contents=[
+                                        DescriptionText(
+                                            contents="This is an important note"
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                    ),
+                    DescriptionAdmonition(
+                        style="warning",
+                        title="Warning",
+                        contents=DescriptionParagraph(
+                            contents=[
+                                DescriptionParagraph(
+                                    contents=[
+                                        DescriptionText(
+                                            contents="Followed by a very important warning"
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                    ),
+                    DescriptionText(contents="Finally some text"),
+                    DescriptionList(
+                        title="Parameters",
+                        contents=[
+                            DescriptionParameter(
+                                name="x",
+                                description=DescriptionParagraph(
+                                    contents=[
+                                        DescriptionParagraph(
+                                            contents=[
+                                                DescriptionText(
+                                                    contents="This is a param"
+                                                )
+                                            ]
+                                        )
+                                    ]
+                                ),
+                                type="int",
+                                direction=None,
+                            ),
+                            DescriptionParameter(
+                                name="y",
+                                description=DescriptionParagraph(
+                                    contents=[
+                                        DescriptionParagraph(
+                                            contents=[
+                                                DescriptionText(
+                                                    contents="This is another param"
+                                                )
+                                            ]
+                                        )
+                                    ]
+                                ),
+                                type=None,
+                                direction=ParameterDirection.OUT,
+                            ),
+                            DescriptionParameter(
+                                name="z",
+                                description=DescriptionParagraph(
+                                    contents=[
+                                        DescriptionParagraph(
+                                            contents=[
+                                                DescriptionText(
+                                                    contents="Finally a 3rd param"
+                                                )
+                                            ]
+                                        )
+                                    ]
+                                ),
+                                type=None,
+                                direction=None,
+                            ),
+                        ],
+                    ),
+                    DescriptionText(contents="Followed by some more text"),
+                ]
+            )
+        ]
     )
+    assert desc == expected
 
-    assert desc[1].kind == DescriptionKind.RETURN
-    assert desc[1].description == '<p markdown="1">Something with a multiline </p>'
-
-    assert desc[2].kind == DescriptionKind.ADMONITION
-    assert desc[2].style == "note"
-    assert desc[2].title == "Note"
-    assert desc[2].contents == '<p markdown="1">This is an important note </p>'
-
-    assert desc[3].kind == DescriptionKind.ADMONITION
-    assert desc[3].style == "warning"
-    assert desc[3].title == "Warning"
-    assert (
-        desc[3].contents == '<p markdown="1">Followed by a very important warning</p>'
-    )
-
-    assert desc[4].kind == DescriptionKind.TEXT
-    assert desc[4].contents == "Finally some text"
-
-    assert desc[5].kind == DescriptionKind.PARAMETERS
-    assert len(desc[5].parameters) == 3
-    assert desc[5].parameters[0].name == "x"
-    assert desc[5].parameters[0].type == "int"
-    assert desc[5].parameters[0].direction is None
-    assert desc[5].parameters[0].description == '<p markdown="1">This is a param </p>'
-
-    assert desc[5].parameters[1].name == "y"
-    assert desc[5].parameters[1].type is None
-    assert desc[5].parameters[1].direction == ParameterDirection.OUT
-    assert (
-        desc[5].parameters[1].description == '<p markdown="1">This is another param</p>'
-    )
-
-    assert desc[5].parameters[2].name == "z"
-    assert desc[5].parameters[2].type is None
-    assert desc[5].parameters[2].direction is None
-    assert (
-        desc[5].parameters[2].description == '<p markdown="1">Finally a 3rd param</p>'
-    )
-
-    assert desc[6].kind == DescriptionKind.TEXT
-    assert desc[6].contents == "Followed by some more text </p>"
 
 def test_var_list_items(doxygen):
     var = doxygen.collect("var_list_items")
     desc = var.description
-    assert len(desc) == 1
-    assert desc[0].kind == DescriptionKind.TEXT
-    assert desc[0].contents == (
-        '<p markdown="1">text<ul markdown="1">\n'
-        '<li markdown="1"><p markdown="1">item1</p></li>'
-        '<li markdown="1"><p markdown="1">item2</p></li></ul></p>\n'
-        '<p markdown="1">more</p>\n'
-        '<p markdown="1"><ul markdown="1">\n'
-        '<li markdown="1"><p markdown="1">item1 </p></li></ul></p>'
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionParagraph(
+                contents=[
+                    DescriptionText(contents="text"),
+                    DescriptionList(
+                        title=None,
+                        contents=[
+                            DescriptionParagraph(
+                                contents=[
+                                    DescriptionParagraph(
+                                        contents=[DescriptionText(contents="item1")]
+                                    )
+                                ]
+                            ),
+                            DescriptionParagraph(
+                                contents=[
+                                    DescriptionParagraph(
+                                        contents=[DescriptionText(contents="item2")]
+                                    )
+                                ]
+                            ),
+                        ],
+                    ),
+                ]
+            ),
+            DescriptionParagraph(contents=[DescriptionText(contents="more")]),
+            DescriptionParagraph(
+                contents=[
+                    DescriptionList(
+                        title=None,
+                        contents=[
+                            DescriptionParagraph(
+                                contents=[
+                                    DescriptionParagraph(
+                                        contents=[DescriptionText(contents="item1")]
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ]
+            ),
+        ]
     )
+    assert desc == expected

@@ -13,10 +13,6 @@ def some[T](value: Optional[T]) -> T:
     return value
 
 
-def escape_html(s: str) -> str:
-    return s.replace("<", "&lt;")
-
-
 Name = str
 Type = str
 
@@ -24,10 +20,14 @@ Type = str
 class DescriptionKind(StrEnum):
     ADMONITION = auto()
     ATTRIBUTES = auto()
-    PARAMETERS = auto()
+    PARAMETER = auto()
+    PARAGRAPH = auto()
     LIST = auto()
     RETURN = auto()
     TEXT = auto()
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}.{self.value.upper()}"
 
 
 @dataclass
@@ -37,11 +37,17 @@ class DescriptionText:
 
 
 @dataclass
+class DescriptionParagraph:
+    kind: ClassVar[DescriptionKind] = DescriptionKind.PARAGRAPH
+    contents: List["Description"]
+
+
+@dataclass
 class DescriptionAdmonition:
     kind: ClassVar[DescriptionKind] = DescriptionKind.ADMONITION
     style: str
     title: str
-    contents: str
+    contents: "Description"
 
 
 class ParameterDirection(StrEnum):
@@ -49,57 +55,41 @@ class ParameterDirection(StrEnum):
     OUT = auto()
     INOUT = auto()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}.{self.value.upper()}"
+
 
 @dataclass
 class DescriptionParameter:
+    kind: ClassVar[DescriptionKind] = DescriptionKind.PARAMETER
     name: Name
-    description: str
+    description: "Description"
     type: Optional[Type] = None
     direction: Optional[ParameterDirection] = None
 
 
 @dataclass
-class DescriptionParameters:
-    kind: ClassVar[DescriptionKind] = DescriptionKind.PARAMETERS
-    parameters: List[DescriptionParameter]
-    title: Optional[str] = None
-
-
-@dataclass
-class DescriptionAttribute:
-    name: Name
-    description: str
-    type: Optional[Type] = None
-
-
-@dataclass
-class DescriptionAttributes:
-    kind: ClassVar[DescriptionKind] = DescriptionKind.ATTRIBUTES
-    attributes: List[DescriptionAttribute]
-    title: Optional[str] = None
-
-
-@dataclass
 class DescriptionList:
     kind: ClassVar[DescriptionKind] = DescriptionKind.LIST
-    title: str
-    contents: List[str]
+    title: Optional[str]
+    contents: List["Description"]
 
 
 @dataclass
 class DescriptionReturn:
     kind: ClassVar[DescriptionKind] = DescriptionKind.RETURN
-    description: str
+    description: "Description"
     title: Optional[str] = None
 
 
-DescriptionSection = (
+Description = (
     DescriptionText
     | DescriptionAdmonition
-    | DescriptionParameters
-    | DescriptionAttributes
+    | DescriptionParameter
+    | DescriptionParagraph
     | DescriptionList
     | DescriptionReturn
+    | None
 )
 
 
@@ -116,6 +106,9 @@ class ObjectKind(StrEnum):
     FUNCTION = auto()
     VARIABLE = auto()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}.{self.value.upper()}"
+
 
 @dataclass
 class Location:
@@ -130,7 +123,7 @@ class Function:
     type: Type
     name: Name
     parameters: List[Parameter]
-    description: List[DescriptionSection]
+    description: Description
     location: Location
 
     @property
@@ -149,7 +142,7 @@ class Variable:
     name: Name
     qualified_name: Name
     initializer: Optional[str]
-    description: List[DescriptionSection]
+    description: Description
     location: Location
 
     @property
@@ -163,7 +156,7 @@ class Define:
     name: Name
     parameters: Optional[List[Parameter]]
     value: Optional[str]
-    description: List[DescriptionSection]
+    description: Description
     location: Location
 
     @property
@@ -179,14 +172,14 @@ class Define:
 class EnumValue:
     name: Name
     initializer: Optional[str]
-    description: List[DescriptionSection]
+    description: Description
 
 
 @dataclass
 class Enum:
     kind: ClassVar[ObjectKind] = ObjectKind.ENUM
     name: Name
-    description: List[DescriptionSection]
+    description: Description
     values: List[EnumValue]
     location: Location
 
@@ -204,6 +197,9 @@ class CompoundType(StrEnum):
     STRUCT = auto()
     UNION = auto()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}.{self.value.upper()}"
+
 
 @dataclass
 class Compound:
@@ -212,7 +208,7 @@ class Compound:
     name: Name
     title: Optional[str]
     members: List["DoxygenObject"]
-    description: List[DescriptionSection]
+    description: Description
     location: Optional[Location]
 
     @property
@@ -296,7 +292,7 @@ def parse_parameters(kind: ObjectKind, node: ElementTree.Element) -> List[Parame
     return params
 
 
-class NodeParser:
+class TextNodeParser:
     def __init__(self, tag: str) -> None:
         self._tag = tag
 
@@ -329,7 +325,7 @@ class NodeParser:
         return out
 
 
-class SimpleNodeParser(NodeParser):
+class SimpleTextNodeParser(TextNodeParser):
     def __init__(self, tag: str, prefix: str, suffix: str):
         super().__init__(tag)
         self._prefix = prefix
@@ -342,12 +338,12 @@ class SimpleNodeParser(NodeParser):
         return self._suffix
 
 
-class CodeBlockNodeParser(SimpleNodeParser):
+class CodeBlockNodeParser(SimpleTextNodeParser):
     def __init__(self, tag: str):
         super().__init__(tag, '<pre><code class="language-cpp">', "</code></pre>")
 
 
-class ProgramListingNodeParser(NodeParser):
+class ProgramListingNodeParser(TextNodeParser):
     """
     Converts <programlisting> back into markdown.
     """
@@ -390,18 +386,18 @@ class ProgramListingNodeParser(NodeParser):
 
 
 TAG_TO_PARSER = {
-    "bold": SimpleNodeParser("bold", "<b>", "</b>"),
-    "emphasis": SimpleNodeParser("emphasis", "<em>", "</em>"),
-    "computeroutput": SimpleNodeParser("computeroutput", "<code>", "</code>"),
-    "para": SimpleNodeParser("para", '<p markdown="1">', "</p>"),
-    "itemizedlist": SimpleNodeParser("itemizedlist", '<ul markdown="1">', "</ul>"),
-    "listitem": SimpleNodeParser("listitem", '<li markdown="1">', "</li>"),
+    "bold": SimpleTextNodeParser("bold", "<b>", "</b>"),
+    "emphasis": SimpleTextNodeParser("emphasis", "<em>", "</em>"),
+    "computeroutput": SimpleTextNodeParser("computeroutput", "<code>", "</code>"),
+    # "para": SimpleTextNodeParser("para", '<p markdown="1">', "</p>"),
+    # "itemizedlist": SimpleTextNodeParser("itemizedlist", '<ul markdown="1">', "</ul>"),
+    # "listitem": SimpleTextNodeParser("listitem", '<li markdown="1">', "</li>"),
     "programlisting": ProgramListingNodeParser(),
     "verbatim": CodeBlockNodeParser("verbatim"),
-    "codeline": SimpleNodeParser("codeline", "", ""),
-    "highlight": SimpleNodeParser("highlight", "", ""),
-    "ref": SimpleNodeParser("ref", "", ""),  # TODO: Handle cross-refs
-    "sp": SimpleNodeParser("sp", " ", ""),
+    "codeline": SimpleTextNodeParser("codeline", "", ""),
+    "highlight": SimpleTextNodeParser("highlight", "", ""),
+    "ref": SimpleTextNodeParser("ref", "", ""),  # TODO: Handle cross-refs
+    "sp": SimpleTextNodeParser("sp", " ", ""),
 }
 
 
@@ -420,109 +416,162 @@ def parse_text(
 
 
 class DescriptionParser:
-    """
-    Perform an in order traversal of the XML tree and parse into
-    DescriptionSection objects.
-    """
-
     def __init__(self, parameters: Optional[List[Parameter]] = None) -> None:
-        self._sections = []
-        self._current_text = ""
         self._parameters = parameters
 
-    def _flush_text(self):
-        self._current_text = self._current_text.strip()
-        if len(self._current_text) > 0:
-            self._sections.append(DescriptionText(contents=self._current_text))
-            self._current_text = ""
+    def _parse_simple(self, node: ElementTree.Element) -> DescriptionText:
+        return DescriptionText(contents=parse_text([node]).strip())
 
-    def _append_section(self, section: DescriptionSection) -> None:
-        self._flush_text()
-        if (
-            section.kind == DescriptionKind.LIST
-            and len(self._sections) > 0
-            and self._sections[-1].kind == DescriptionKind.LIST
-            and self._sections[-1].title == section.title
-        ):
-            self._sections[-1].contents += section.contents
-        else:
-            self._sections.append(section)
+    def _parse_para(self, node: ElementTree.Element) -> DescriptionParagraph:
+        contents = []
 
-    def _parse_simplesect(self, node: ElementTree.Element) -> None:
+        def append(description: Description):
+            """
+            Append the new section & merge in to previous one if applicable.
+            """
+            if description.kind == DescriptionKind.TEXT:
+                description.contents = description.contents.strip()
+                if not description.contents:
+                    return
+
+            if len(contents) == 0:
+                contents.append(description)
+                return
+
+            if (
+                description.kind == DescriptionKind.TEXT
+                and contents[-1].kind == DescriptionKind.TEXT
+            ):
+                contents[-1].contents += "\n"
+                contents[-1].contents += description.contents
+
+            if (
+                description.kind == DescriptionKind.LIST
+                and contents[-1].kind == DescriptionKind.LIST
+                and description.title is not None
+                and contents[-1].title == description.title
+            ):
+                contents[-1].contents += description.contents
+                return
+
+            contents.append(description)
+
+        assert node.tag == "para"
+
+        if node.text:
+            append(DescriptionText(contents=node.text))
+
+        for child in list(node):
+            append(self.parse(child))
+            if child.tail:
+                append(DescriptionText(contents=child.tail))
+
+        if node.tail:
+            append(DescriptionText(contents=node.tail))
+
+        return DescriptionParagraph(contents=contents)
+
+    def parse_para(self, nodes: List[ElementTree.Element]) -> DescriptionParagraph:
+        paragraphs = []
+        for node in nodes:
+            paragraphs.append(self._parse_para(node))
+        return DescriptionParagraph(contents=paragraphs)
+
+    def _parse_list(self, node: ElementTree.Element) -> DescriptionList:
+        assert node.tag == "itemizedlist"
+
+        contents = []
+
+        for child in list(node):
+            if child.tag != "listitem":
+                raise ValueError("Only <listitem> allowed in <itemizedlist>")
+            contents.append(self.parse_para(child.findall("para")))
+
+        return DescriptionList(title=None, contents=contents)
+
+    def _parse_simplesect(self, node: ElementTree.Element) -> Description:
         if node.text:
             raise ValueError("Unexpected text in <simplesect>")
 
         kind = some(node.get("kind"))
+
+        contents = self.parse_para(node.findall("para"))
+
         if kind == "return":
-            self._append_section(DescriptionReturn(description=parse_text(list(node))))
+            return DescriptionReturn(title="Returns", description=contents)
         elif is_admonition(kind):
-            self._append_section(
-                DescriptionAdmonition(
-                    style=admonition_style(kind),
-                    title=admonition_title(kind),
-                    contents=parse_text(list(node)),
-                )
+            return DescriptionAdmonition(
+                style=admonition_style(kind),
+                title=admonition_title(kind),
+                contents=contents,
             )
         elif kind == "pre" or kind == "post":
-            contents = parse_text(list(node))
             title = {"pre": "Preconditions", "post": "Postconditions"}[kind]
-            self._append_section(DescriptionList(title=title, contents=[contents]))
+            return DescriptionList(title=title, contents=[contents])
         else:
             raise ValueError(f"Unexpected kind '{kind}' in Doxygen XML")
 
-        if node.tail:
-            self._current_text += node.tail
+    def _get_param_type(self, name: Name) -> Optional[Type]:
+        if self._parameters is None:
+            return None
+        for p in self._parameters:
+            if p.name == name:
+                return p.type
+        return None
 
-    def _parse_parameterlist(self, node: ElementTree.Element) -> None:
+    def _parse_parameterlist(self, node: ElementTree.Element) -> DescriptionList:
         if node.text:
             raise ValueError("Unexpected text in <parameterlist>")
 
-        self._append_section(
-            parse_description_parameters(
-                node.findall("parameteritem"), self._parameters
+        params = []
+
+        for node in node.findall("parameteritem"):
+            names = node.findall("parameternamelist/parametername")
+            if len(names) != 1:
+                raise ValueError(f"Expected exactly one parameter name, got {names}")
+            name = some(parse_name(names[0]))
+
+            params.append(
+                DescriptionParameter(
+                    type=self._get_param_type(name),
+                    name=name,
+                    description=self.parse_para(
+                        node.findall("parameterdescription/para")
+                    ),
+                    direction=parse_direction(names[0]),
+                )
             )
+
+        return DescriptionList(
+            title="Parameters",
+            contents=params,
         )
 
-        if node.tail:
-            self._current_text += node.tail
-
-    def _parse_para(self, node: ElementTree.Element) -> None:
-        handler = TAG_TO_PARSER["para"]
-
-        self._current_text += handler.prefix(node)
-
-        if node.text:
-            self._current_text += node.text
-
-        for child in list(node):
-            self.parse(child)
-
-        self._current_text += handler.suffix(node)
-
-        if node.tail:
-            self._current_text += node.tail
-
-    def parse(self, node: ElementTree.Element) -> None:
+    def parse(self, node: ElementTree.Element) -> Description:
         if node.tag == "para":
-            return self._parse_para(node)
-
-        if node.tag == "simplesect":
+            return self.parse_para()
+        elif node.tag == "simplesect":
             return self._parse_simplesect(node)
-
-        if node.tag == "parameterlist" and some(node.get("kind")) == "param":
+        elif node.tag == "parameterlist":
             return self._parse_parameterlist(node)
+        elif node.tag == "itemizedlist":
+            return self._parse_list(node)
+        else:
+            return self._parse_simple(node)
 
-        self._current_text += parse_text([node])
 
-    def sections(self) -> List[DescriptionSection]:
-        self._flush_text()
+def parse_description(
+    node: ElementTree.Element, parameters: Optional[List[Parameter]] = None
+) -> Description:
+    nodes = node.findall("briefdescription/para") + node.findall(
+        "detaileddescription/para"
+    )
 
-        sections = self._sections
+    if len(nodes) == 0:
+        return None
 
-        self._sections = []
-        self._current_text = ""
-
-        return sections
+    parser = DescriptionParser(parameters)
+    return parser.parse_para(nodes)
 
 
 def parse_direction(node: ElementTree.Element) -> Optional[ParameterDirection]:
@@ -537,105 +586,6 @@ def parse_direction(node: ElementTree.Element) -> Optional[ParameterDirection]:
         return ParameterDirection.INOUT
     else:
         raise ValueError(f"Invalid direction '{direction}'")
-
-
-def parse_description_parameters(
-    nodes: List[ElementTree.Element],
-    parameters: Optional[List[Parameter]] = None,
-) -> DescriptionParameters:
-    params = []
-
-    def get_type(name: Name) -> Optional[Type]:
-        if parameters is None:
-            return None
-        for p in parameters:
-            if p.name == name:
-                return p.type
-        return None
-
-    for node in nodes:
-        names = node.findall("parameternamelist/parametername")
-        if len(names) != 1:
-            raise ValueError(f"Expected exactly one parameter name, got {names}")
-        name = some(parse_name(names[0]))
-
-        params.append(
-            DescriptionParameter(
-                type=get_type(name),
-                name=name,
-                description=parse_text(node.find("parameterdescription")),
-                direction=parse_direction(names[0]),
-            )
-        )
-
-    return DescriptionParameters(parameters=params)
-
-
-def get_description_sections(nodes: List[ElementTree.Element]):
-    for node in nodes:
-        for child in list(node):
-            if child.tag == "para":
-                if child.text or len(list(child)) == 0:
-                    yield child
-                else:
-                    for n in list(child):
-                        yield n
-            else:
-                yield child
-
-
-def parse_description(
-    node: ElementTree.Element, parameters: List[Parameter]
-) -> List[DescriptionSection]:
-    nodes = node.findall("briefdescription") + node.findall("detaileddescription")
-
-    description = []
-
-    parser = DescriptionParser(parameters)
-    for node in nodes:
-        [parser.parse(n) for n in list(node)]
-
-    return parser.sections()
-
-    def append_list(title: str, content: str):
-        if (
-            len(description) > 0
-            and description[-1].kind == DescriptionKind.LIST
-            and description[-1].title == title
-        ):
-            description[-1].contents.append(content)
-        else:
-            description.append(DescriptionList(title=title, contents=[content]))
-
-    for n in get_description_sections(nodes):
-        if n.tag == "simplesect":
-            kind = some(n.get("kind"))
-            if kind == "return":
-                description.append(DescriptionReturn(description=parse_text(list(n))))
-            elif is_admonition(kind):
-                description.append(
-                    DescriptionAdmonition(
-                        style=admonition_style(kind),
-                        title=admonition_title(kind),
-                        contents=parse_text(list(n)),
-                    )
-                )
-            elif kind == "pre" or kind == "post":
-                contents = parse_text(list(n))
-                title = {"pre": "Preconditions", "post": "Postconditions"}[kind]
-                append_list(title, contents)
-            else:
-                raise ValueError(f"Unexpected kind '{kind}' in Doxygen XML")
-            continue
-
-        if n.tag == "parameterlist" and some(n.get("kind")) == "param":
-            description.append(
-                parse_description_parameters(n.findall("parameteritem"), parameters)
-            )
-            continue
-        description.append(DescriptionText(contents=parse_text([n])))
-
-    return description
 
 
 def parse_location(node: ElementTree.Element) -> Optional[Location]:

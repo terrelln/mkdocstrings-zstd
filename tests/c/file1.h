@@ -114,4 +114,14 @@ int func_in_para_returns(int x);
  */
 int var_list_items;
 
+/// brief description
+int var_brief;
+
+/**
+ * @brief brief descriptiona
+ *
+ * Followed by a longer description
+ */
+int var_brief_and_detailed;
+
 #endif

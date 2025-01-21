@@ -3,15 +3,17 @@
 This template renders parameters in a list format.
 
 Context:
-section: The section to render.
+description (DescriptionReturn): The description to render.
 heading_level
 html_id
 autorefs_hook
 -#}
 
 <p>
-    <span class="doc-section-title">{{ section.title or "Returns" }}:</span>
-    <div class="doc-return-description">
-            {{ section.description|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
-    </div>
+    <span class="doc-section-title">{{ description.title }}:</span>
 </p>
+<div class="doc-return-description">
+    {% with description = description.description %}
+    {% include "description.html.jinja" %}
+    {% endwith %}
+</div>

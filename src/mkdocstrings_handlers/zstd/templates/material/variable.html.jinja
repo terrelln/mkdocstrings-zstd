@@ -37,7 +37,7 @@ config (dict): The configuration options
 
     <div class="doc doc-contents">
         {% block description scoped %}
-        {% with description_sections = variable.description %}
+        {% with description = variable.description %}
         {% include "description.html.jinja" %}
         {% endwith %}
         {% endblock description %}

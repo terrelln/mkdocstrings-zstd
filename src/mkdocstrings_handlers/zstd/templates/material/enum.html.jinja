@@ -36,7 +36,7 @@ config (dict): The configuration options
 
     <div class="doc doc-contents">
         {% block enum_description scoped %}
-        {% with description_sections = enum.description %}
+        {% with description = enum.description %}
         {% include "description.html.jinja" %}
         {% endwith %}
         {% endblock enum_description %}
@@ -53,7 +53,7 @@ config (dict): The configuration options
 
             <div class="doc doc-contents">
                 {% block value_description scoped %}
-                {% with description_sections = value.description %}
+                {% with description = value.description %}
                 {% include "description.html.jinja" %}
                 {% endwith %}
                 {% endblock value_description %}
