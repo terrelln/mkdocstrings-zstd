@@ -442,8 +442,9 @@ class DescriptionParser:
                 description.kind == DescriptionKind.TEXT
                 and contents[-1].kind == DescriptionKind.TEXT
             ):
-                contents[-1].contents += "\n"
+                contents[-1].contents += " "
                 contents[-1].contents += description.contents
+                return
 
             if (
                 description.kind == DescriptionKind.LIST
@@ -463,7 +464,7 @@ class DescriptionParser:
 
         for child in list(node):
             append(self.parse(child))
-            if child.tail:
+            if contents[-1].kind != DescriptionKind.TEXT and child.tail:
                 append(DescriptionText(contents=child.tail))
 
         if node.tail:
@@ -475,6 +476,8 @@ class DescriptionParser:
         paragraphs = []
         for node in nodes:
             paragraphs.append(self._parse_para(node))
+        if len(paragraphs) == 1:
+            return paragraphs[0]
         return DescriptionParagraph(contents=paragraphs)
 
     def _parse_list(self, node: ElementTree.Element) -> DescriptionList:

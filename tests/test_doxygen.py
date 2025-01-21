@@ -183,114 +183,65 @@ def test_func_in_para_returns(doxygen):
     desc = func.description
 
     print(desc)
+
     expected = DescriptionParagraph(
         contents=[
-            DescriptionParagraph(
+            DescriptionText(
+                contents="This is some inline documentation that goes straight into a return without a newline."
+            ),
+            DescriptionReturn(
+                description=DescriptionParagraph(
+                    contents=[DescriptionText(contents="Something with a multiline")]
+                ),
+                title="Returns",
+            ),
+            DescriptionAdmonition(
+                style="note",
+                title="Note",
+                contents=DescriptionParagraph(
+                    contents=[DescriptionText(contents="This is an important note")]
+                ),
+            ),
+            DescriptionAdmonition(
+                style="warning",
+                title="Warning",
+                contents=DescriptionParagraph(
+                    contents=[
+                        DescriptionText(contents="Followed by a very important warning")
+                    ]
+                ),
+            ),
+            DescriptionText(contents="Finally some text"),
+            DescriptionList(
+                title="Parameters",
                 contents=[
-                    DescriptionText(
-                        contents="This is some inline documentation that goes straight into a return without a newline."
-                    ),
-                    DescriptionReturn(
+                    DescriptionParameter(
+                        name="x",
                         description=DescriptionParagraph(
-                            contents=[
-                                DescriptionParagraph(
-                                    contents=[
-                                        DescriptionText(
-                                            contents="Something with a multiline"
-                                        )
-                                    ]
-                                )
-                            ]
+                            contents=[DescriptionText(contents="This is a param")]
                         ),
-                        title="Returns",
+                        type="int",
+                        direction=None,
                     ),
-                    DescriptionAdmonition(
-                        style="note",
-                        title="Note",
-                        contents=DescriptionParagraph(
-                            contents=[
-                                DescriptionParagraph(
-                                    contents=[
-                                        DescriptionText(
-                                            contents="This is an important note"
-                                        )
-                                    ]
-                                )
-                            ]
+                    DescriptionParameter(
+                        name="y",
+                        description=DescriptionParagraph(
+                            contents=[DescriptionText(contents="This is another param")]
                         ),
+                        type=None,
+                        direction=ParameterDirection.OUT,
                     ),
-                    DescriptionAdmonition(
-                        style="warning",
-                        title="Warning",
-                        contents=DescriptionParagraph(
-                            contents=[
-                                DescriptionParagraph(
-                                    contents=[
-                                        DescriptionText(
-                                            contents="Followed by a very important warning"
-                                        )
-                                    ]
-                                )
-                            ]
+                    DescriptionParameter(
+                        name="z",
+                        description=DescriptionParagraph(
+                            contents=[DescriptionText(contents="Finally a 3rd param")]
                         ),
+                        type=None,
+                        direction=None,
                     ),
-                    DescriptionText(contents="Finally some text"),
-                    DescriptionList(
-                        title="Parameters",
-                        contents=[
-                            DescriptionParameter(
-                                name="x",
-                                description=DescriptionParagraph(
-                                    contents=[
-                                        DescriptionParagraph(
-                                            contents=[
-                                                DescriptionText(
-                                                    contents="This is a param"
-                                                )
-                                            ]
-                                        )
-                                    ]
-                                ),
-                                type="int",
-                                direction=None,
-                            ),
-                            DescriptionParameter(
-                                name="y",
-                                description=DescriptionParagraph(
-                                    contents=[
-                                        DescriptionParagraph(
-                                            contents=[
-                                                DescriptionText(
-                                                    contents="This is another param"
-                                                )
-                                            ]
-                                        )
-                                    ]
-                                ),
-                                type=None,
-                                direction=ParameterDirection.OUT,
-                            ),
-                            DescriptionParameter(
-                                name="z",
-                                description=DescriptionParagraph(
-                                    contents=[
-                                        DescriptionParagraph(
-                                            contents=[
-                                                DescriptionText(
-                                                    contents="Finally a 3rd param"
-                                                )
-                                            ]
-                                        )
-                                    ]
-                                ),
-                                type=None,
-                                direction=None,
-                            ),
-                        ],
-                    ),
-                    DescriptionText(contents="Followed by some more text"),
-                ]
-            )
+                ],
+            ),
+            DescriptionText(contents="Followed by some more text"),
         ]
     )
     assert desc == expected
@@ -310,18 +261,10 @@ def test_var_list_items(doxygen):
                         title=None,
                         contents=[
                             DescriptionParagraph(
-                                contents=[
-                                    DescriptionParagraph(
-                                        contents=[DescriptionText(contents="item1")]
-                                    )
-                                ]
+                                contents=[DescriptionText(contents="item1")]
                             ),
                             DescriptionParagraph(
-                                contents=[
-                                    DescriptionParagraph(
-                                        contents=[DescriptionText(contents="item2")]
-                                    )
-                                ]
+                                contents=[DescriptionText(contents="item2")]
                             ),
                         ],
                     ),
@@ -334,16 +277,56 @@ def test_var_list_items(doxygen):
                         title=None,
                         contents=[
                             DescriptionParagraph(
-                                contents=[
-                                    DescriptionParagraph(
-                                        contents=[DescriptionText(contents="item1")]
-                                    )
-                                ]
+                                contents=[DescriptionText(contents="item1")]
                             )
                         ],
                     )
                 ]
             ),
+        ]
+    )
+    assert desc == expected
+
+
+def test_var_brief(doxygen):
+    var = doxygen.collect("var_brief")
+    desc = var.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[DescriptionText(contents="brief description")]
+    )
+    assert desc == expected
+
+
+def test_var_brief_and_detailed(doxygen):
+    var = doxygen.collect("var_brief_and_detailed")
+    desc = var.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionParagraph(
+                contents=[DescriptionText(contents="brief description")]
+            ),
+            DescriptionParagraph(
+                contents=[DescriptionText(contents="Followed by a longer description")]
+            ),
+        ]
+    )
+    assert desc == expected
+
+
+def test_var_markups(doxygen):
+    var = doxygen.collect("var_markups")
+    desc = var.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionText(
+                contents="Test markups like <b>bold</b> and <em>italics</em> work as expected."
+            )
         ]
     )
     assert desc == expected

@@ -118,10 +118,16 @@ int var_list_items;
 int var_brief;
 
 /**
- * @brief brief descriptiona
+ * @brief brief description
  *
  * Followed by a longer description
  */
 int var_brief_and_detailed;
+
+/**
+ * Test markups like **bold** and *italics*
+ * work as expected.
+ */
+int var_markups;
 
 #endif

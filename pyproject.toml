@@ -20,6 +20,9 @@ editable-backend = "editables"
 addopts = [
     "--import-mode=importlib",
 ]
+filterwarnings = [
+    'ignore:Setting a fallback anchor:DeprecationWarning',
+]
 
 [dependency-groups]
 dev = [
