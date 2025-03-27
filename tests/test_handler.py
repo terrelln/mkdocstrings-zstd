@@ -112,3 +112,9 @@ def test_handler_func_with_param(handler: ZstdHandler):
     assert pos != -1
     html = html[pos:]
     assert html.count("<p>") == 1
+
+def test_handler_func_with_code_block(handler: ZstdHandler):
+    func = handler.collect("func_with_code_block", {})
+    html = handler.render(func, {})
+    print(html)
+    assert '<pre><code class="language-cpp">' in html

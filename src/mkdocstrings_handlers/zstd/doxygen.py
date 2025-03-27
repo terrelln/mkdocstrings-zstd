@@ -423,7 +423,7 @@ def parse_text(
             out += TAG_TO_PARSER[node.tag].handle(node, allowlist)
         else:
             raise ValueError(f"Unexpected tag '{node.tag}' in Doxygen XML")
-    return out.strip()
+    return out
 
 
 class DescriptionParser:

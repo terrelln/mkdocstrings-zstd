@@ -140,4 +140,13 @@ int var_markups;
  */
 void func_with_param(int x);
 
+/**
+ * ```cpp
+ * // This is a code block.
+ * docs_with_code_block();
+ * void foo();
+ * ```
+ */
+void func_with_code_block();
+
 #endif

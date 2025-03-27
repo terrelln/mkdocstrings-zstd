@@ -23,3 +23,5 @@
 ::: FUNC_MACRO_NO_ARGS
 
 ::: func_with_param
+
+::: func_with_code_block

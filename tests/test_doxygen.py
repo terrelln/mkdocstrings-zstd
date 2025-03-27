@@ -355,3 +355,18 @@ def test_func_with_param(doxygen):
         ]
     )
     assert desc == expected
+
+
+def test_func_with_code_block(doxygen):
+    func = doxygen.collect("func_with_code_block")
+    desc = func.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionText(
+                contents="```cpp\n// This is a code block.\ndocs_with_code_block();\nvoid foo();\n```"
+            )
+        ]
+    )
+    assert desc == expected
