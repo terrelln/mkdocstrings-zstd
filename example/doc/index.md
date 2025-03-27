@@ -33,3 +33,9 @@
 ::: u1
 
 ::: x
+
+::: struct1
+
+::: typedef1
+
+::: ptr1

@@ -14,7 +14,7 @@ config (dict): The configuration options
     {%
         filter heading(
             heading_level,
-            role="var",
+            role=variable.role,
             id=html_id,
             toc_label=(('<code class="doc-symbol doc-symbol-toc doc-symbol-variable"></code>&nbsp;')|safe if config.show_symbol_type_toc else '') + variable.name,
             hidden=True,

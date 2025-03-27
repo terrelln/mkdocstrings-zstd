@@ -380,8 +380,40 @@ def test_func_with_refs(doxygen):
     expected = DescriptionParagraph(
         contents=[
             DescriptionText(
-                contents="[s1][s1] [u1][u1] [Group 1][g1] [func1][func1] [enum1][enum1] [x][x] [MACRO1][MACRO1]"
+                contents="[struct1][struct1] [typedef1][typedef1] [s1][s1] [u1][u1] [Group 1][g1] [func1][func1] [enum1][enum1] [x][x] [MACRO1][MACRO1]"
             )
         ]
     )
     assert desc == expected
+
+
+def test_struct1(doxygen):
+    struct1 = doxygen.collect("struct1")
+    assert struct1.kind == ObjectKind.TYPEDEF
+    assert struct1.type == "struct struct1_s"
+    assert struct1.name == "struct1"
+    assert struct1.qualified_name == "struct1"
+    assert struct1.definition == "typedef struct struct1_s struct1"
+    assert struct1.description is None
+
+
+def test_typedef1(doxygen):
+    typedef1 = doxygen.collect("typedef1")
+    assert typedef1.kind == ObjectKind.TYPEDEF
+    assert typedef1.type == "struct original"
+    assert typedef1.name == "typedef1"
+    assert typedef1.qualified_name == "typedef1"
+    assert typedef1.definition == "typedef struct original typedef1"
+    assert typedef1.description.kind == DescriptionKind.PARAGRAPH
+    assert len(typedef1.description.contents) == 1
+
+
+def test_ptr1(doxygen):
+    typedef1 = doxygen.collect("ptr1")
+    assert typedef1.kind == ObjectKind.TYPEDEF
+    assert typedef1.type == "typedef1*"
+    assert typedef1.name == "ptr1"
+    assert typedef1.qualified_name == "ptr1"
+    assert typedef1.definition == "typedef typedef1* ptr1"
+    assert typedef1.description.kind == DescriptionKind.PARAGRAPH
+    assert len(typedef1.description.contents) == 1

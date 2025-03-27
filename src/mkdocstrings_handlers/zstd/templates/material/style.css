@@ -78,6 +78,7 @@
   --doc-symbol-enum-fg-color: #79c0ff;
   --doc-symbol-union-fg-color: #79c0ff;
   --doc-symbol-group-fg-color: #baff79;
+  --doc-symbol-typedef-fg-color: #baff79;
 
   --doc-symbol-parameter-bg-color: #ffa8cc1a;
   --doc-symbol-attribute-bg-color: #ffa6571a;
@@ -89,6 +90,7 @@
   --doc-symbol-enum-bg-color: #79c0ff1a;
   --doc-symbol-union-bg-color: #79c0ff1a;
   --doc-symbol-group-bg-color: #baff791a;
+  --doc-symbol-typedef-bg-color: #baff791a;
 }
 
 code.doc-symbol {
@@ -186,4 +188,13 @@ code.doc-symbol-group {
 
 code.doc-symbol-group::after {
   content: "group";
+}
+
+code.doc-symbol-typedef {
+  color: var(--doc-symbol-typedef-fg-color);
+  background-color: var(--doc-symbol-typedef-bg-color);
+}
+
+code.doc-symbol-typedef::after {
+  content: "typedef";
 }

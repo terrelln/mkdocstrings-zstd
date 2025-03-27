@@ -16,7 +16,7 @@ config (dict): The configuration options
     {%
     filter heading(
     heading_level,
-    role="enum",
+    role=enum.role,
     id=html_id,
     toc_label=(('<code class="doc-symbol doc-symbol-toc doc-symbol-enum"></code>&nbsp;')|safe if
     config.show_symbol_type_toc else '') + enum.name,

@@ -15,11 +15,11 @@ config (dict): The configuration options
     {% block signature scoped %}
     {% if compound.type == "group" %}
     <div class="doc doc-contents">
-        {% if (root and config.show_root_toc_entry) or config.show_member_toc_entries %}
+        {% if (root and config.show_root_toc_entry) or config.show_compound_toc_entries %}
         {%
         filter heading(
         heading_level,
-        role="group",
+        role=compound.role,
         id=html_id,
         toc_label=(('<code class="doc-symbol doc-symbol-toc doc-symbol-group"></code>&nbsp;')|safe if
         config.show_symbol_type_toc else '') + compound.title,
@@ -35,7 +35,7 @@ config (dict): The configuration options
         {%
         filter heading(
         heading_level,
-        role="group",
+        role=compound.role,
         id=html_id,
         toc_label=(('<code class="doc-symbol doc-symbol-toc doc-symbol-' + compound.type + '"></code>&nbsp;')|safe if
         config.show_symbol_type_toc else '') + compound.name,

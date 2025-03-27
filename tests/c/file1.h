@@ -12,6 +12,14 @@
 typedef struct struct1_s struct1;
 
 /**
+ * This typedefs some original struct.
+ */
+typedef struct original typedef1;
+
+/// Typedefs a pointer
+typedef typedef1* ptr1;
+
+/**
  * A function that does something with @p s and @p x.
  *
  * @pre `s != NULL`
@@ -150,6 +158,8 @@ void func_with_param(int x);
 void func_with_code_block();
 
 /**
+ * @ref struct1
+ * @ref typedef1
  * @ref s1
  * @ref u1
  * @ref g1

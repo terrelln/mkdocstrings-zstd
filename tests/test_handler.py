@@ -127,3 +127,11 @@ def test_handler_enum(handler: ZstdHandler):
     assert '<div class="highlight"><pre><span></span><code><span class="n">enum1_value2</span>\n</code></pre></div>' in html
     assert 'The first enum value.' in html
     assert "None" not in html
+
+def test_typedef1(handler: ZstdHandler):
+    item = handler.collect("typedef1", {})
+    html = handler.render(item, {})
+
+    print(html)
+    assert '<div class="highlight"><pre><span></span><code><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">original</span><span class="w"> </span><span class="n">typedef1</span><span class="p">;</span>' in html
+    assert 'This typedefs some original struct.' in html

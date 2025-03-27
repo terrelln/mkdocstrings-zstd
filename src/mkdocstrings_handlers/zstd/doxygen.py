@@ -105,6 +105,7 @@ class ObjectKind(StrEnum):
     ENUM = auto()
     FUNCTION = auto()
     VARIABLE = auto()
+    TYPEDEF = auto()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}.{self.value.upper()}"
@@ -148,6 +149,24 @@ class Variable:
     @property
     def role(self) -> str:
         return "var"
+
+
+@dataclass
+class Typedef:
+    kind: ClassVar[ObjectKind] = ObjectKind.TYPEDEF
+    type: Type
+    name: Name
+    definition: str
+    description: Description
+    location: Location
+
+    @property
+    def qualified_name(self) -> Name:
+        return self.name
+
+    @property
+    def role(self) -> str:
+        return "typedef"
 
 
 @dataclass
@@ -220,7 +239,7 @@ class Compound:
         return str(self.type)
 
 
-DoxygenObject = Function | Define | Enum | Variable | Compound
+DoxygenObject = Function | Define | Enum | Variable | Typedef | Compound
 
 
 class TextParser:
@@ -728,6 +747,15 @@ class Doxygen:
             location=some(parse_location(node)),
         )
 
+    def _parse_typedef(self, node: ElementTree.Element) -> Typedef:
+        return Typedef(
+            type=some(parse_type(node.find("type"))),
+            name=some(parse_name(node.find("name"))),
+            definition=parse_simple_text(node.find("definition")),
+            description=self._parse_description(node, []),
+            location=some(parse_location(node)),
+        )
+
     def _parse_member(self, node: ElementTree.Element) -> DoxygenObject:
         kind = node.get("kind")
         if kind == "function":
@@ -738,6 +766,8 @@ class Doxygen:
             return self._parse_enum(node)
         elif kind == "variable":
             return self._parse_variable(node)
+        elif kind == "typedef":
+            return self._parse_typedef(node)
         else:
             raise ValueError(f"Unsupported kind '{kind}' in Doxygen XML")
 
