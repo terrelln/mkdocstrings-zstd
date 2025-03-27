@@ -46,7 +46,8 @@ config (dict): The configuration options
             {% block value_signature scoped %}
             <div class="doc doc-signature">
                 {%+ filter highlight(language="cpp", inline=False) %}
-                {{ value.name }} {{ value.initializer }}
+                {{ value.name }}
+                {%- if value.initializer %} {{ value.initializer }}{%- endif %}
                 {% endfilter %}
             </div>
             {% endblock value_signature %}

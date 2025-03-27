@@ -25,3 +25,11 @@
 ::: func_with_param
 
 ::: func_with_code_block
+
+::: func_with_refs
+
+::: s1
+
+::: u1
+
+::: x

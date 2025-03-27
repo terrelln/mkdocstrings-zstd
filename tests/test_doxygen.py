@@ -370,3 +370,18 @@ def test_func_with_code_block(doxygen):
         ]
     )
     assert desc == expected
+
+
+def test_func_with_refs(doxygen):
+    func = doxygen.collect("func_with_refs")
+    desc = func.description
+
+    print(desc)
+    expected = DescriptionParagraph(
+        contents=[
+            DescriptionText(
+                contents="[s1][s1] [u1][u1] [Group 1][g1] [func1][func1] [enum1][enum1] [x][x] [MACRO1][MACRO1]"
+            )
+        ]
+    )
+    assert desc == expected

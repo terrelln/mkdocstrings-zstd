@@ -223,6 +223,136 @@ class Compound:
 DoxygenObject = Function | Define | Enum | Variable | Compound
 
 
+class TextParser:
+    def __init__(
+        self, doxygen: Optional["Doxygen"] = None, allowlist: Optional[Set[str]] = None
+    ) -> None:
+        self._doxygen = doxygen
+        self._allowlist = allowlist
+        self._parsers = {
+            "bold": self._parse_bold,
+            "emphasis": self._parse_emphasis,
+            "computeroutput": self._parse_computeroutput,
+            "programlisting": self._parse_programlisting,
+            "verbatim": self._parse_verbatim,
+            "codeline": self._parse_codeline,
+            "highlight": self._parse_highlight,
+            "ref": self._parse_ref,
+            "sp": self._parse_sp,
+        }
+
+    def _parse(
+        self,
+        node: ElementTree.Element,
+        tag: str,
+        prefix: Optional[str] = None,
+        suffix: Optional[str] = None,
+    ) -> str:
+        if node.tag != tag:
+            raise Exception(f"Invalid node {node.tag} expected {tag}")
+
+        out = ""
+
+        if prefix is not None:
+            out += prefix
+
+        if node.text:
+            out += node.text
+
+        for child in list(node):
+            out += self.parse(child)
+
+        if suffix is not None:
+            out += suffix
+
+        if node.tail:
+            out += node.tail
+
+        return out
+
+    def _parse_bold(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "bold", "<b>", "</b>")
+
+    def _parse_emphasis(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "emphasis", "<em>", "</em>")
+
+    def _parse_computeroutput(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "computeroutput", "<code>", "</code>")
+
+    def _parse_verbatim(self, node: ElementTree.Element) -> str:
+        return self._parse(
+            node, "verbatim", '<pre><code class="language-cpp">', "</code></pre>"
+        )
+
+    def _parse_codeline(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "codeline", "", "")
+
+    def _parse_highlight(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "highlight", "", "")
+
+    def _parse_sp(self, node: ElementTree.Element) -> str:
+        return self._parse(node, "sp", " ", "")
+
+    def _parse_programlisting(self, node: ElementTree.Element) -> str:
+        language = node.get("filename")
+        if language is not None:
+            assert language.startswith(".")
+            language = language[1:]
+        prefix = f"\n```{language or ''}\n"
+        code_parser = self.with_allowlist({"codeline", "highlight", "sp", "ref"})
+        return code_parser._parse(node, "programlisting", prefix, "```\n")
+
+    def _parse_ref(self, node: ElementTree.Element) -> str:
+        if len(list(node)) != 0:
+            raise ValueError(
+                f"Unexpected children in <ref> tag with refid={node.get('refid')}"
+            )
+        out = node.text
+        if self._doxygen is not None:
+            qualified_name = self._doxygen.find_qualified_name(node)
+            out.replace("[", "\\[")
+            out.replace("]", "\\]")
+            out = f"[{out}][{qualified_name}]"
+
+        if node.tail:
+            out += node.tail
+
+        return out
+
+    def with_allowlist(self, allowlist: Set[str]) -> "TextParser":
+        return TextParser(doxygen=self._doxygen, allowlist=allowlist)
+
+    def parse(self, node: ElementTree.Element) -> str:
+        out = ""
+        if self._allowlist is not None and node.tag not in self._allowlist:
+            raise ValueError(f"Illegal tag '{node.tag}' in Doxygen XML")
+        if node.tag in self._parsers:
+            out += self._parsers[node.tag](node)
+        else:
+            raise ValueError(f"Unexpected tag '{node.tag}' in Doxygen XML")
+        return out
+
+
+def parse_simple_text(node: ElementTree.Element) -> str:
+    """
+    Parses text from an arbitrary node that may only contain "ref" children.
+    The references are ignored.
+    """
+    parser = TextParser(allowlist={"ref"})
+
+    text = ""
+    if node.text:
+        text += node.text
+
+    for child in list(node):
+        text += parser.parse(child)
+
+    if node.tail:
+        text += node.tail
+
+    return text.strip()
+
+
 def normalize_type(type_: Type) -> Type:
     type_ = type_.replace("< ", "<").replace(" >", ">")
     return type_.replace(" &", "&").replace(" *", "*")
@@ -256,20 +386,14 @@ def admonition_title(kind: str) -> str:
 def parse_name(node: Optional[ElementTree.Element]) -> Optional[Name]:
     if node is None:
         return None
-    return node.text
+    return parse_simple_text(node)
 
 
 def parse_type(node: Optional[ElementTree.Element]) -> Optional[Type]:
     if node is None:
         return None
-    result = node.text if node.text else ""
-    # TODO: Handle cross refs
-    for ref in list(node):
-        result += ref.text
-        if ref.tail:
-            result += ref.tail
-    result += node.tail.strip()
-    return normalize_type(result)
+    name = parse_simple_text(node)
+    return normalize_type(name)
 
 
 def parse_parameters(
@@ -303,135 +427,15 @@ def parse_parameters(
     return params
 
 
-class TextNodeParser:
-    def __init__(self, tag: str) -> None:
-        self._tag = tag
-
-    def prefix(self, node: ElementTree.Element) -> str:
-        raise NotImplementedError()
-
-    def suffix(self, node: ElementTree.Element) -> str:
-        raise NotImplementedError()
-
-    def handle(
-        self, node: ElementTree.Element, allowlist: Optional[Set[str]] = None
-    ) -> str:
-        if node.tag != self._tag:
-            raise Exception(f"Invalid node {node.tag} expected {self._tag}")
-
-        out = ""
-
-        out += self.prefix(node)
-
-        if node.text:
-            out += node.text
-
-        out += parse_text(list(node), allowlist)
-
-        out += self.suffix(node)
-
-        if node.tail:
-            out += node.tail
-
-        return out
-
-
-class SimpleTextNodeParser(TextNodeParser):
-    def __init__(self, tag: str, prefix: str, suffix: str):
-        super().__init__(tag)
-        self._prefix = prefix
-        self._suffix = suffix
-
-    def prefix(self, node: ElementTree.Element) -> str:
-        return self._prefix
-
-    def suffix(self, node: ElementTree.Element) -> str:
-        return self._suffix
-
-
-class CodeBlockNodeParser(SimpleTextNodeParser):
-    def __init__(self, tag: str):
-        super().__init__(tag, '<pre><code class="language-cpp">', "</code></pre>")
-
-
-class ProgramListingNodeParser(TextNodeParser):
-    """
-    Converts <programlisting> back into markdown.
-    """
-
-    def __init__(self):
-        super().__init__(tag="programlisting")
-
-    def prefix(self, node: ElementTree.Element) -> str:
-        language = node.get("filename")
-        if language is not None:
-            assert language.startswith(".")
-            language = language[1:]
-        return f"\n```{language or ''}\n"
-
-    def handle(
-        self, node: ElementTree.Element, allowlist: Optional[Set[str]] = None
-    ) -> str:
-        if node.tag != self._tag:
-            raise Exception(f"Invalid node {node.tag} expected {self._tag}")
-
-        if node.text:
-            raise ValueError("Unexpected text in <programlisting>")
-
-        out = ""
-
-        out += self.prefix(node)
-
-        # TODO: Support cross-refs
-        out += parse_text(list(node), {"codeline", "highlight", "sp", "ref"})
-
-        out += self.suffix(node)
-
-        if node.tail:
-            out += node.tail
-
-        return out
-
-    def suffix(self, node: ElementTree.Element) -> str:
-        return "```\n"
-
-
-TAG_TO_PARSER = {
-    "bold": SimpleTextNodeParser("bold", "<b>", "</b>"),
-    "emphasis": SimpleTextNodeParser("emphasis", "<em>", "</em>"),
-    "computeroutput": SimpleTextNodeParser("computeroutput", "<code>", "</code>"),
-    # "para": SimpleTextNodeParser("para", '<p markdown="1">', "</p>"),
-    # "itemizedlist": SimpleTextNodeParser("itemizedlist", '<ul markdown="1">', "</ul>"),
-    # "listitem": SimpleTextNodeParser("listitem", '<li markdown="1">', "</li>"),
-    "programlisting": ProgramListingNodeParser(),
-    "verbatim": CodeBlockNodeParser("verbatim"),
-    "codeline": SimpleTextNodeParser("codeline", "", ""),
-    "highlight": SimpleTextNodeParser("highlight", "", ""),
-    "ref": SimpleTextNodeParser("ref", "", ""),  # TODO: Handle cross-refs
-    "sp": SimpleTextNodeParser("sp", " ", ""),
-}
-
-
-def parse_text(
-    nodes: List[ElementTree.ElementTree], allowlist: Optional[Set[str]] = None
-) -> str:
-    out = ""
-    for node in nodes:
-        if allowlist is not None and node.tag not in allowlist:
-            raise ValueError(f"Illegal tag '{node.tag}' in Doxygen XML")
-        if node.tag in TAG_TO_PARSER:
-            out += TAG_TO_PARSER[node.tag].handle(node, allowlist)
-        else:
-            raise ValueError(f"Unexpected tag '{node.tag}' in Doxygen XML")
-    return out
-
-
 class DescriptionParser:
-    def __init__(self, parameters: Optional[List[Parameter]] = None) -> None:
+    def __init__(
+        self, doxygen: "Doxygen", parameters: Optional[List[Parameter]] = None
+    ) -> None:
         self._parameters = parameters
+        self._text_parser = TextParser(doxygen=doxygen)
 
-    def _parse_simple(self, node: ElementTree.Element) -> DescriptionText:
-        return DescriptionText(contents=parse_text([node]).strip())
+    def _parse_text(self, node: ElementTree.Element) -> DescriptionText:
+        return DescriptionText(contents=self._text_parser.parse(node).strip())
 
     def _parse_para(self, node: ElementTree.Element) -> DescriptionParagraph:
         contents = []
@@ -571,21 +575,7 @@ class DescriptionParser:
         elif node.tag == "itemizedlist":
             return self._parse_list(node)
         else:
-            return self._parse_simple(node)
-
-
-def parse_description(
-    node: ElementTree.Element, parameters: Optional[List[Parameter]] = None
-) -> Description:
-    nodes = node.findall("briefdescription/para") + node.findall(
-        "detaileddescription/para"
-    )
-
-    if len(nodes) == 0:
-        return None
-
-    parser = DescriptionParser(parameters)
-    return parser.parse_para(nodes)
+            return self._parse_text(node)
 
 
 def parse_direction(node: ElementTree.Element) -> Optional[ParameterDirection]:
@@ -613,83 +603,11 @@ def parse_location(node: ElementTree.Element) -> Optional[Location]:
     )
 
 
-def parse_function(node: ElementTree.Element) -> Function:
-    parameters = parse_parameters(ObjectKind.FUNCTION, node)
-    return Function(
-        type=some(parse_type(node.find("type"))),
-        name=some(parse_name(node.find("name"))),
-        parameters=parameters,
-        description=parse_description(node, parameters),
-        location=some(parse_location(node)),
-    )
-
-
-def parse_define(node: ElementTree.Element) -> Define:
-    initializer = node.find("initializer")
-    if initializer is not None:
-        initializer = initializer.text
-    return Define(
-        name=some(parse_name(node.find("name"))),
-        parameters=parse_parameters(ObjectKind.DEFINE, node),
-        initializer=initializer,
-        description=parse_description(node, []),
-        location=some(parse_location(node)),
-    )
-
-
 def parse_initializer(node: ElementTree.Element) -> Optional[str]:
     initializer = node.find("initializer")
     if initializer is not None:
-        return initializer.text
+        return parse_simple_text(initializer)
     return None
-
-
-def parse_enum_values(node: ElementTree.Element) -> List[EnumValue]:
-    values = []
-    for v in node.findall("enumvalue"):
-        values.append(
-            EnumValue(
-                name=some(parse_name(v.find("name"))),
-                initializer=parse_initializer(v),
-                description=parse_description(v, []),
-            )
-        )
-    return values
-
-
-def parse_enum(node: ElementTree.Element) -> Enum:
-    return Enum(
-        name=some(parse_name(node.find("name"))),
-        description=parse_description(node, []),
-        location=some(parse_location(node)),
-        values=parse_enum_values(node),
-    )
-
-
-def parse_variable(node: ElementTree.Element) -> Variable:
-    name = some(parse_name(node.find("name")))
-    return Variable(
-        type=some(parse_type(node.find("type"))),
-        name=name,
-        qualified_name=parse_name(node.find("qualifiedname")) or name,
-        initializer=parse_initializer(node),
-        description=parse_description(node, []),
-        location=some(parse_location(node)),
-    )
-
-
-def parse_member(node: ElementTree.Element) -> DoxygenObject:
-    kind = node.get("kind")
-    if kind == "function":
-        return parse_function(node)
-    elif kind == "define":
-        return parse_define(node)
-    elif kind == "enum":
-        return parse_enum(node)
-    elif kind == "variable":
-        return parse_variable(node)
-    else:
-        raise ValueError(f"Unsupported kind '{kind}' in Doxygen XML")
 
 
 def parse_compound_type(node: ElementTree.Element) -> CompoundType:
@@ -726,6 +644,7 @@ class Doxygen:
             INCLUDE_PATH         = {0}
             INPUT                = {1}
             XML_OUTPUT           = {2}
+            EXTRACT_ALL          = YES
             QUIET                = NO
             AUTOLINK_SUPPORT     = NO
             MACRO_EXPANSION      = YES
@@ -746,6 +665,82 @@ class Doxygen:
 
         self._compound_xml = {}
 
+    def _parse_description(
+        self, node: ElementTree.Element, parameters: Optional[List[Parameter]] = None
+    ) -> Description:
+        nodes = node.findall("briefdescription/para") + node.findall(
+            "detaileddescription/para"
+        )
+
+        if len(nodes) == 0:
+            return None
+
+        parser = DescriptionParser(self, parameters)
+        return parser.parse_para(nodes)
+
+    def _parse_function(self, node: ElementTree.Element) -> Function:
+        parameters = parse_parameters(ObjectKind.FUNCTION, node)
+        return Function(
+            type=some(parse_type(node.find("type"))),
+            name=some(parse_name(node.find("name"))),
+            parameters=parameters,
+            description=self._parse_description(node, parameters),
+            location=some(parse_location(node)),
+        )
+
+    def _parse_define(self, node: ElementTree.Element) -> Define:
+        return Define(
+            name=some(parse_name(node.find("name"))),
+            parameters=parse_parameters(ObjectKind.DEFINE, node),
+            initializer=parse_initializer(node),
+            description=self._parse_description(node, []),
+            location=some(parse_location(node)),
+        )
+
+    def _parse_enum_values(self, node: ElementTree.Element) -> List[EnumValue]:
+        values = []
+        for v in node.findall("enumvalue"):
+            values.append(
+                EnumValue(
+                    name=some(parse_name(v.find("name"))),
+                    initializer=parse_initializer(v),
+                    description=self._parse_description(v, []),
+                )
+            )
+        return values
+
+    def _parse_enum(self, node: ElementTree.Element) -> Enum:
+        return Enum(
+            name=some(parse_name(node.find("name"))),
+            description=self._parse_description(node, []),
+            location=some(parse_location(node)),
+            values=self._parse_enum_values(node),
+        )
+
+    def _parse_variable(self, node: ElementTree.Element) -> Variable:
+        name = some(parse_name(node.find("name")))
+        return Variable(
+            type=some(parse_type(node.find("type"))),
+            name=name,
+            qualified_name=parse_name(node.find("qualifiedname")) or name,
+            initializer=parse_initializer(node),
+            description=self._parse_description(node, []),
+            location=some(parse_location(node)),
+        )
+
+    def _parse_member(self, node: ElementTree.Element) -> DoxygenObject:
+        kind = node.get("kind")
+        if kind == "function":
+            return self._parse_function(node)
+        elif kind == "define":
+            return self._parse_define(node)
+        elif kind == "enum":
+            return self._parse_enum(node)
+        elif kind == "variable":
+            return self._parse_variable(node)
+        else:
+            raise ValueError(f"Unsupported kind '{kind}' in Doxygen XML")
+
     def _load_compound(self, refid: str) -> ElementTree.Element:
         if refid in self._compound_xml:
             return self._compound_xml[refid]
@@ -760,7 +755,7 @@ class Doxygen:
         name = some(parse_name(node.find("compoundname")))
         title = node.find("title")
         if title is not None:
-            title = title.text
+            title = parse_simple_text(title)
         else:
             title = name
 
@@ -772,14 +767,14 @@ class Doxygen:
             members.append(inner)
 
         for member in node.findall("sectiondef/memberdef"):
-            members.append(parse_member(member))
+            members.append(self._parse_member(member))
 
         return Compound(
             type=parse_compound_type(node),
             name=name,
             title=title,
             members=members,
-            description=parse_description(node, []),
+            description=self._parse_description(node, []),
             location=parse_location(node),
         )
 
@@ -826,7 +821,7 @@ class Doxygen:
         node = self._load_member_node(name)
         if node is None:
             return None
-        return parse_member(node)
+        return self._parse_member(node)
 
     def collect(self, identifier: str) -> DoxygenObject:
         obj = self._collect_member(identifier)
@@ -838,3 +833,32 @@ class Doxygen:
             return obj
 
         raise ValueError(f"Unknown identifier '{identifier}'")
+
+    def find_qualified_name(self, ref: ElementTree.Element) -> Name:
+        assert ref.tag == "ref"
+
+        refid = ref.get("refid")
+        if refid is None:
+            raise ValueError("Missing refid in Doxygen XML")
+        kindref = ref.get("kindref")
+        if kindref is None:
+            raise ValueError("Missing kindref in Doxygen XML")
+
+        nodes = self._index.findall(f".//{kindref}[@refid='{refid}']/name")
+        if len(nodes) == 0:
+            print(f"{kindref}[@refid='{refid}']/name")
+            raise ValueError(f"Unknown {kindref} reference {refid} in Doxygen XML")
+
+        name = nodes[0].text
+
+        for node in nodes:
+            if node.text != name:
+                raise ValueError(
+                    f"{kindref} {refid} has two names: '{name}' and '{node.text}'"
+                )
+            if len(list(node)) != 0:
+                raise ValueError(
+                    f"Unexpected children in {kindref} reference {refid} in Doxygen XML"
+                )
+
+        return name

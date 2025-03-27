@@ -17,7 +17,7 @@ typedef struct struct1_s struct1;
  * @pre `s != NULL`
  * @pre `x > 0`
  * @post `s->x == x`
- * @param s a struct to operate on with type @ref struct1
+ * @param s a struct to operate on with type
  * @param x an integer to operate on
  * @return `s->x`
  */
@@ -30,8 +30,8 @@ typedef enum {
      * Another enum value that uses a macro @ref MACRO1
      */
     MACRO1(enum1_value2),
-    enum1_value3, //< third enum value
-    enum1_value5 = 5, //< explicit initializer
+    enum1_value3, ///< third enum value
+    enum1_value5 = 5, ///< explicit initializer
 } enum1;
 
 struct s1 {
@@ -148,5 +148,16 @@ void func_with_param(int x);
  * ```
  */
 void func_with_code_block();
+
+/**
+ * @ref s1
+ * @ref u1
+ * @ref g1
+ * @ref func1
+ * @ref enum1
+ * @ref x
+ * @ref MACRO1
+ */
+void func_with_refs();
 
 #endif

@@ -118,3 +118,12 @@ def test_handler_func_with_code_block(handler: ZstdHandler):
     html = handler.render(func, {})
     print(html)
     assert '<pre><code class="language-cpp">' in html
+
+def test_handler_enum(handler: ZstdHandler):
+    item = handler.collect("enum1", {})
+    html = handler.render(item, {})
+    print(html)
+    assert '<span class="n">enum1_value1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>' in html
+    assert '<div class="highlight"><pre><span></span><code><span class="n">enum1_value2</span>\n</code></pre></div>' in html
+    assert 'The first enum value.' in html
+    assert "None" not in html
